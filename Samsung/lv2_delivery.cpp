@@ -1,8 +1,14 @@
 #include <iostream>
 #include <vector>
-#define INF 9999
+#include <queue>
 
 using namespace std;
+
+struct Village
+{
+	int number;
+	int weight;
+};
 
 int country[1001][1001];
 
@@ -21,7 +27,8 @@ int main(void)
 
 	for (auto t = 0; t < T; ++t)
 	{
-		vector<int> delivery;	
+		vector<int> delivery;
+		queue<Village> q;
 		int result = 0;
 
 		cin >> N;
@@ -34,14 +41,7 @@ int main(void)
 		{
 			for (auto j = 0; j <= N; ++j)
 			{
-				if (i == j)
-				{
-					country[i][j] = 0;
-				}
-				else
-				{
-					country[i][j] = INF;
-				}
+				country[i][j] = 0;
 			}
 		}
 
@@ -54,6 +54,7 @@ int main(void)
 
 			delivery.push_back(node);
 		}
+		delivery.push_back(S);
 
 		// 간선 입력
 		for (auto m = 0; m < M; ++m)
@@ -66,35 +67,56 @@ int main(void)
 			country[b][a] = 1;
 		}
 
-		// 플로이드 알고리즘
-		for (auto k = 1; k <= N; ++k)
+		q.push({ S, 0 });
+
+		/*
+		 * 시작점에서 첫 번째 목표치에 도달
+		 * 첫 번째 목표치에서 두 번째 목표치에 도달
+		 * 두 번째 목표치에서 시작점에 도달
+		*/
+
+		while (!delivery.empty())
 		{
-			for (auto i = 1; i <= N; ++i)
+			bool visit[1000] = { false, };
+			auto goal = delivery.front();
+			delivery.erase(delivery.begin());
+
+			// bfs
+			while (!q.empty())
 			{
-				for (auto j = 1; j <= N; ++j)
+				auto node = q.front();
+				q.pop();
+				visit[node.number] = true;
+
+				if (node.number == goal)
 				{
-					if (country[i][j] > country[i][k] + country[k][j])
+					result += node.weight;
+					queue<Village>().swap(q);
+					q.push({ node.number, 0 });
+					break;
+				}
+
+				for (auto i = 1; i <= N; ++i)
+				{
+					if (visit[i])
 					{
-						country[i][j] = country[i][k] + country[k][j];
+						continue;
+					}
+
+					if (country[node.number][i] == 1)
+					{
+						if (i == goal)
+						{
+							queue<Village>().swap(q);
+							q.push({ i, node.weight + 1 });
+							break;
+						}
+						q.push({ i, node.weight + 1 });
+						visit[i] = true;
 					}
 				}
 			}
 		}
-
-		// 이동 경로 추적해서 합산
-		int prev = delivery[0];
-
-		delivery.erase(delivery.begin());
-		result += country[S][prev];
-		
-		for (auto k = 0; k < K-1; ++k)
-		{
-			result += country[prev][delivery.front()];
-			prev = delivery.front();
-			delivery.erase(delivery.begin());
-		}
-
-		result += country[prev][S];
 
 		cout << "#" << t + 1 << " " << result << endl;
 	}
